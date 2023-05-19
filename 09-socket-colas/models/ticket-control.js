@@ -59,7 +59,7 @@ class TicketControl {
             return null;
         }
 
-        const ticket =this.tickets.shift();
+        const ticket = this.tickets.shift();
         ticket.escritorio = escritorio;
 
         this.ultimos4.unshift( ticket );
