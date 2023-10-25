@@ -1,11 +1,10 @@
-const { Schema, model } = require('mongoose');
+import { Schema, model } from 'mongoose';
 
-const RoleSchema = Schema({
-    rol: {
+const RoleSchema = new Schema({
+    role: {
         type: String,
-        required: [true, 'El rol es obligatorio']
+        required: [ true, 'El rol es obligatorio' ]
     }
 });
 
-
-module.exports = model( 'Role', RoleSchema );
+export default model( 'Role', RoleSchema );

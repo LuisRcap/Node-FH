@@ -1,12 +1,9 @@
-const { Router } = require('express');
-const { buscar } = require('../controllers/buscar');
+import { Router } from 'express';
+import { buscar } from '../controllers/buscar.js';
+
 
 const router = Router();
 
+router.get( '/:coleccion/:termino', buscar );
 
-router.get('/:coleccion/:termino', buscar )
-
-
-
-
-module.exports = router;
+export default router;

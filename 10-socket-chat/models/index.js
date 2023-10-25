@@ -1,18 +1,5 @@
-
-
-const Categoria = require('./categoria');
-const Producto = require('./producto');
-const Role = require('./role');
-const Server = require('./server');
-const Usuario = require('./usuario');
-
-
-
-module.exports = {
-    Categoria,
-    Producto,
-    Role,
-    Server,
-    Usuario,
-}
-
+export { default as Categoria }     from './categoria.js'
+export { default as Producto }      from './producto.js'
+export { default as Role }          from './role.js'
+export { default as Usuario }       from './usuario.js'
+export { default as ChatMensajes }  from './chat-mensajes.js';

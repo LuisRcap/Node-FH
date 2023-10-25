@@ -1,14 +1,4 @@
-
-
-const dbValidators = require('./db-validators');
-const generarJWT   = require('./generar-jwt');
-const googleVerify = require('./google-verify');
-const subirArchivo = require('./subir-archivo');
-
-
-module.exports = {
-    ...dbValidators,
-    ...generarJWT,
-    ...googleVerify,
-    ...subirArchivo,
-}
+export * from './db-validators.js';
+export * from './generar-jwt.js';
+export * from './google-verify.js';
+export * from './subir-archivo.js';

@@ -1,43 +1,62 @@
-const { response } = require('express');
-const { Categoria } = require('../models');
+import { request, response } from "express";
+import { Categoria } from '../models/index.js';
 
-
-const obtenerCategorias = async(req, res = response ) => {
-
-    const { limite = 5, desde = 0 } = req.query;
+// obtenerCategorias - paginado - total - populate
+export const obtenerCategorias = async ( req = request, res = response ) => {
+    const { paginacion = 1 } = req.body;
     const query = { estado: true };
 
-    const [ total, categorias ] = await Promise.all([
-        Categoria.countDocuments(query),
-        Categoria.find(query)
-            .populate('usuario', 'nombre')
-            .skip( Number( desde ) )
-            .limit(Number( limite ))
-    ]);
+    try{
+        const [ total, categorias ]= await Promise.all([
+            Categoria.countDocuments( query ),
+            Categoria.find( query )
+                .populate( 'usuario', 'nombre' )
+                .skip( ( Number( paginacion ) - 1) * 5 )
+                .limit( Number( 5 ) )
+        ]).catch( errors => {
+            console.log( "Error al obtener los datos " + errors );
+        });
+    
+        return res.status(200).json({
+            total,
+            categorias
+        })
 
-    res.json({
-        total,
-        categorias
-    });
+    } catch ( err ) {
+
+        return res.json(500).json({
+            msg: 'Error al consultar categorias'
+        })
+    }
+
 }
 
-const obtenerCategoria = async(req, res = response ) => {
-
+// obtenerCategoria - populate {}
+export const obtenerCategoria = async ( req = request, res = response ) => {
     const { id } = req.params;
-    const categoria = await Categoria.findById( id )
-                            .populate('usuario', 'nombre');
 
-    res.json( categoria );
+    try {
+        const categoria = await Categoria.findOne( { _id: id, estado: true } )
+            .populate('usuario', 'nombre');
 
+        return res.status(200).json({
+            msg: "Categoría encontrada",
+            categoria
+        })
+    } catch( err ) {
+        return res.status(500).json({
+            msg: "Error al obtener los datos de la categoría"
+        })
+    }
 }
 
-const crearCategoria = async(req, res = response ) => {
+export const crearCategoria = async ( req = request, res = response ) => {
 
     const nombre = req.body.nombre.toUpperCase();
 
-    const categoriaDB = await Categoria.findOne({ nombre });
+    const categoriaDB = await Categoria.findOne({ nombre, estado: true });
 
-    if ( categoriaDB ) {
+    if( categoriaDB ) {
         return res.status(400).json({
             msg: `La categoria ${ categoriaDB.nombre }, ya existe`
         });
@@ -47,46 +66,65 @@ const crearCategoria = async(req, res = response ) => {
     const data = {
         nombre,
         usuario: req.usuario._id
-    }
+    };
 
     const categoria = new Categoria( data );
 
     // Guardar DB
     await categoria.save();
 
-    res.status(201).json(categoria);
+    res.status(201).json(categoria)
 
 }
 
-const actualizarCategoria = async( req, res = response ) => {
+// actualizarCategoria
+export const actualizarCategoria = async ( req = request, res = response ) => {
 
     const { id } = req.params;
     const { estado, usuario, ...data } = req.body;
 
-    data.nombre  = data.nombre.toUpperCase();
-    data.usuario = req.usuario._id;
+    data.nombre = data.nombre.toUpperCase();
+    data.usuario = req.usuario._id
 
-    const categoria = await Categoria.findByIdAndUpdate(id, data, { new: true });
+    try {
+        const categoriaDB = await Categoria.findOne({ nombre: data.nombre, estado: true });
 
-    res.json( categoria );
+        if( categoriaDB ) {
+            return res.status(400).json({
+                msg: `La categoria ${ categoriaDB.nombre }, ya existe`
+            });
+        }
+        
+        const categoria = await Categoria.findByIdAndUpdate( id, data, { new: true });
+    
+        return res.json({
+            msg: `Categoría con el id ${ id } actualizada correctamente a ${ data.nombre }`,
+            categoriaAnterior: categoria
+        });
+    } catch( err ) {
+        console.log("Error: " + err );
+        return res.status(500).json({
+            msg: "Error al acutalizar la categoría"
+        })
+    }
 
 }
 
-const borrarCategoria = async(req, res =response ) => {
-
+// borrarCategoria - estado: false
+export const borrarCategoria = async ( req = request, res = response ) => {
     const { id } = req.params;
-    const categoriaBorrada = await Categoria.findByIdAndUpdate( id, { estado: false }, {new: true });
 
-    res.json( categoriaBorrada );
-}
+    try {
+        const categoriaBorrada = await Categoria.findByIdAndUpdate( id, { estado: false }, { new: true });
 
+        return res.status(200).json({
+            categoriaBorrada
+        })
 
+    } catch( err ) {
+        return res.status(500).json({
+            msg: "Error al borrar categoría"
+        });
+    }
 
-
-module.exports = {
-    crearCategoria,
-    obtenerCategorias,
-    obtenerCategoria,
-    actualizarCategoria,
-    borrarCategoria
 }

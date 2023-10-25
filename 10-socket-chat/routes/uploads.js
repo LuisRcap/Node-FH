@@ -1,30 +1,26 @@
-const { Router } = require('express');
-const { check } = require('express-validator');
+import { Router } from 'express';
+import { check } from 'express-validator';
 
-const { validarCampos, validarArchivoSubir } = require('../middlewares');
-const { cargarArchivo, actualizarImagen, mostrarImagen, actualizarImagenCloudinary } = require('../controllers/uploads');
-const { coleccionesPermitidas } = require('../helpers');
+import { validarCampos, validarArchivoSubir } from '../middlewares/index.js';
 
+import { actualizarImagenCloudinary, cargarArchivo, mostrarImagen } from '../controllers/uploads.js';
+import { coleccionesPermitidas } from '../helpers/db-validators.js';
 
 const router = Router();
 
+router.post('/', validarArchivoSubir, cargarArchivo);
 
-router.post( '/', validarArchivoSubir, cargarArchivo );
-
-router.put('/:coleccion/:id', [
+router.put( '/:coleccion/:id', [
     validarArchivoSubir,
-    check('id','El id debe de ser de mongo').isMongoId(),
-    check('coleccion').custom( c => coleccionesPermitidas( c, ['usuarios','productos'] ) ),
+    check( 'id', 'Este id debe ser un Mongo ID' ).isMongoId(),
+    check( 'coleccion' ).custom( c => coleccionesPermitidas( c, ['usuarios', 'productos'] ) ),
     validarCampos
-], actualizarImagenCloudinary )
-// ], actualizarImagen )
+], actualizarImagenCloudinary );
 
-router.get('/:coleccion/:id', [
-    check('id','El id debe de ser de mongo').isMongoId(),
-    check('coleccion').custom( c => coleccionesPermitidas( c, ['usuarios','productos'] ) ),
+router.get( '/:coleccion/:id', [
+    check( 'id', 'Este id debe ser un Mongo ID' ).isMongoId(),
+    check( 'coleccion' ).custom( c => coleccionesPermitidas( c, ['usuarios', 'productos'] ) ),
     validarCampos
-], mostrarImagen  )
+], mostrarImagen )
 
-
-
-module.exports = router;
+export default router;

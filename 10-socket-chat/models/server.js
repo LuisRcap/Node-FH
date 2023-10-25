@@ -1,14 +1,26 @@
-const express = require('express');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
+import express from 'express';
+import cors from 'cors';
+import { Server as io } from 'socket.io'
+import { createServer } from 'http'
+import fileUpload from 'express-fileupload'
 
-const { dbConnection } = require('../database/config');
+import {
+    authRouter,
+    buscarRouter,
+    categoryRouter,
+    productsRouter,
+    uploadsRouter,
+    userRouter
+} from '../routes/index.js'
+import { dbConnection } from '../database/config.js';
+import { socketController } from '../sockets/controller.js';
 
 class Server {
-
     constructor() {
-        this.app  = express();
+        this.app = express();
         this.port = process.env.PORT;
+        this.server = createServer( this.app );
+        this.io = new io(this.server)
 
         this.paths = {
             auth:       '/api/auth',
@@ -16,9 +28,8 @@ class Server {
             categorias: '/api/categorias',
             productos:  '/api/productos',
             usuarios:   '/api/usuarios',
-            uploads:    '/api/uploads',
-        }
-
+            uploads:    '/api/uploads'
+        };
 
         // Conectar a base de datos
         this.conectarDB();
@@ -26,24 +37,26 @@ class Server {
         // Middlewares
         this.middlewares();
 
-        // Rutas de mi aplicación
+        // Rutas de mi alicación
         this.routes();
+
+        // Sockets
+        this.sockets();
     }
 
     async conectarDB() {
         await dbConnection();
     }
 
-
     middlewares() {
-
+        
         // CORS
         this.app.use( cors() );
 
-        // Lectura y parseo del body
+        // Lectura y Parseo del body
         this.app.use( express.json() );
-
-        // Directorio Público
+        
+        // Directorio público
         this.app.use( express.static('public') );
 
         // Fileupload - Carga de archivos
@@ -55,26 +68,28 @@ class Server {
 
     }
 
+    sockets() {
+        this.io.on("connection", ( socket ) => socketController( socket, this.io ) );
+    }
+
     routes() {
-        
-        this.app.use( this.paths.auth, require('../routes/auth'));
-        this.app.use( this.paths.buscar, require('../routes/buscar'));
-        this.app.use( this.paths.categorias, require('../routes/categorias'));
-        this.app.use( this.paths.productos, require('../routes/productos'));
-        this.app.use( this.paths.usuarios, require('../routes/usuarios'));
-        this.app.use( this.paths.uploads, require('../routes/uploads'));
-        
+
+        // User Routes
+        this.app.use( this.paths.auth, authRouter );
+        this.app.use( this.paths.buscar, buscarRouter );
+        this.app.use( this.paths.categorias, categoryRouter );
+        this.app.use( this.paths.productos, productsRouter );
+        this.app.use( this.paths.usuarios, userRouter );
+        this.app.use( this.paths.uploads, uploadsRouter );
+
     }
 
     listen() {
-        this.app.listen( this.port, () => {
-            console.log('Servidor corriendo en puerto', this.port );
+        this.server.listen(this.port, () => {
+            console.log( "Servidor corriendo en puerto", this.port );
         });
     }
 
 }
 
-
-
-
-module.exports = Server;
+export default Server;

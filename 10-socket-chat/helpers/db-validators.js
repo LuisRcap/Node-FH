@@ -1,75 +1,70 @@
-const Role = require('../models/role');
-const { Usuario, Categoria, Producto } = require('../models');
+import Role from '../models/role.js';
+import { Usuario, Categoria, Producto } from '../models/index.js';
 
-const esRoleValido = async(rol = '') => {
+export const isValidRole = async ( role = '') => {
+    const roleExist = await Role.findOne({ role });
 
-    const existeRol = await Role.findOne({ rol });
-    if ( !existeRol ) {
-        throw new Error(`El rol ${ rol } no está registrado en la BD`);
+    if( !roleExist ) {
+        throw new Error( `El rol ${ role } no está registrado en la BD` );
     }
 }
 
-const emailExiste = async( correo = '' ) => {
-
-    // Verificar si el correo existe
-    const existeEmail = await Usuario.findOne({ correo });
-    if ( existeEmail ) {
-        throw new Error(`El correo: ${ correo }, ya está registrado`);
+export const emailExists = async ( correo = '' ) => {
+    const exists = await Usuario.findOne({ correo });
+    if ( exists ) {
+        throw new Error( `El correo '${ correo }' ya está registrado` );
     }
 }
 
-const existeUsuarioPorId = async( id ) => {
-
+export const existeUsuarioPorId = async( id ) => {
     // Verificar si el correo existe
     const existeUsuario = await Usuario.findById(id);
-    if ( !existeUsuario ) {
-        throw new Error(`El id no existe ${ id }`);
+    if( !existeUsuario ) {
+        throw new Error( `El id no existe ${ id }` );
+    }
+};
+
+export const existeCategoria = async ( id ) => {
+    // Verificar si la categoría existe en la DB
+    const existeCategoriaPorId = await Categoria.findById( id );
+    if( !existeCategoriaPorId ) {
+        throw new Error( `El id no existe ${ id }` );
     }
 }
 
-/**
- * Categorias
- */
-const existeCategoriaPorId = async( id ) => {
-
-    // Verificar si el correo existe
-    const existeCategoria = await Categoria.findById(id);
-    if ( !existeCategoria ) {
-        throw new Error(`El id no existe ${ id }`);
+// Función para validar si una categoría existe por un nombre
+export const existeCategoriaPorNombre = async ( nombre = '', req ) => {
+    
+    // Verificar si la categoría existe en la DB
+    const existeCategoria = await Categoria.findOne( { nombre: nombre.toUpperCase() } );
+    if( !existeCategoria ) {
+        throw new Error( `El nombre no existe ${ nombre }` );
     }
-}
 
-/**
- * Productos
- */
-const existeProductoPorId = async( id ) => {
+    req.req.categoria = existeCategoria;
+};
 
-    // Verificar si el correo existe
-    const existeProducto = await Producto.findById(id);
-    if ( !existeProducto ) {
-        throw new Error(`El id no existe ${ id }`);
+// Función para validar si un producto existe por su ID
+export const existeProductoPorId = async ( id = '', req ) => {
+    // Verificar si la producto existe en la DB
+    const existeProducto = await Producto.findById( id );
+    if( !existeProducto ) {
+        throw new Error( `El id no existe ${ id }` );
     }
+
+    req.req.producto = existeProducto;
 }
 
 /**
  * Validar colecciones permitidas
  */
-const coleccionesPermitidas = ( coleccion = '', colecciones = []) => {
+export const coleccionesPermitidas = ( coleccion = '', colecciones = [] ) => {
 
     const incluida = colecciones.includes( coleccion );
-    if ( !incluida ) {
-        throw new Error(`La colección ${ coleccion } no es permitida, ${ colecciones }`);
+
+    if( !incluida ) {
+        throw new Error( `La colección ${ coleccion } no es permitida, ${ colecciones }` );
     }
-    return true;
+
+    return true
 }
-
-
-module.exports = {
-    esRoleValido,
-    emailExiste,
-    existeUsuarioPorId,
-    existeCategoriaPorId,
-    existeProductoPorId,
-    coleccionesPermitidas
-}
-

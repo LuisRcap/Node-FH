@@ -1,69 +1,67 @@
-const { response } = require('express');
-const bcryptjs = require('bcryptjs')
+import { json, request, response } from "express";
+import bcryptjs from 'bcryptjs';
+import Usuario from '../models/usuario.js'
 
-const Usuario = require('../models/usuario');
+import { generarJWT } from "../helpers/generar-jwt.js";
+import { googleVerify } from "../helpers/google-verify.js";
 
-const { generarJWT } = require('../helpers/generar-jwt');
-const { googleVerify } = require('../helpers/google-verify');
+export const login = async ( req = request, res = response ) => {
 
-
-const login = async(req, res = response) => {
-
-    const { correo, password } = req.body;
+    const { correo, password } = req.body
 
     try {
-      
+        
         // Verificar si el email existe
-        const usuario = await Usuario.findOne({ correo });
+        const usuario = await Usuario.findOne({ correo, estado: true });
         if ( !usuario ) {
             return res.status(400).json({
-                msg: 'Usuario / Password no son correctos - correo'
-            });
+                msg: 'Usuario / Password no son correctos - correo - estado'
+            })
         }
 
-        // SI el usuario está activo
-        if ( !usuario.estado ) {
+        // Si el usuario está activo
+        /* if ( !usuario.estado ) {
             return res.status(400).json({
                 msg: 'Usuario / Password no son correctos - estado: false'
-            });
-        }
+            })
+        } */
 
         // Verificar la contraseña
         const validPassword = bcryptjs.compareSync( password, usuario.password );
-        if ( !validPassword ) {
+        if( !validPassword ) {
             return res.status(400).json({
                 msg: 'Usuario / Password no son correctos - password'
-            });
+            })
         }
 
         // Generar el JWT
-        const token = await generarJWT( usuario.id );
+        const token = await generarJWT( usuario.id )
 
         res.json({
             usuario,
             token
-        })
-
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({
-            msg: 'Hable con el administrador'
         });
-    }   
+
+    } catch ( error ) {
+        console.log( error );
+        return res.status(500).json({
+            msg: 'Hable con el administrador'
+        })
+    }
 
 }
 
-
-const googleSignin = async(req, res = response) => {
-
-    const { id_token } = req.body;
+export const googleSignIn = async ( req = request, res = response ) => {
     
-    try {
-        const { correo, nombre, img } = await googleVerify( id_token );
+    const { id_token } = req.body;
 
+    try {
+
+        const { nombre, img, correo } = await googleVerify( id_token );
+        
         let usuario = await Usuario.findOne({ correo });
 
-        if ( !usuario ) {
+        if( !usuario ) {
             // Tengo que crearlo
             const data = {
                 nombre,
@@ -78,7 +76,7 @@ const googleSignin = async(req, res = response) => {
         }
 
         // Si el usuario en DB
-        if ( !usuario.estado ) {
+        if( !usuario.estado ) {
             return res.status(401).json({
                 msg: 'Hable con el administrador, usuario bloqueado'
             });
@@ -86,27 +84,28 @@ const googleSignin = async(req, res = response) => {
 
         // Generar el JWT
         const token = await generarJWT( usuario.id );
-        
+
         res.json({
             usuario,
             token
-        });
-        
-    } catch (error) {
-
-        res.status(400).json({
-            msg: 'Token de Google no es válido'
         })
-
+    } catch ( err ) {
+        console.log("Error: " + err);
+        res.status(400).json({
+            ok: false,
+            msg: 'El Token no se pudo verificar'
+        })
     }
-
-
-
 }
 
+export const renovarToken = async ( req = request, res = response ) => {
+    const { usuario } = req;
 
+    // Generar el JWT
+    const token = await generarJWT( usuario.id )
 
-module.exports = {
-    login,
-    googleSignin
+    return res.json({
+        usuario,
+        token
+    });
 }

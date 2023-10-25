@@ -1,14 +1,19 @@
-const { Router } = require('express');
-const { check } = require('express-validator');
+import { Router } from 'express';
+import { check } from 'express-validator';
 
-const { validarJWT, validarCampos, esAdminRole } = require('../middlewares');
-
-const { crearCategoria,
-        obtenerCategorias,
-        obtenerCategoria,
-        actualizarCategoria, 
-        borrarCategoria } = require('../controllers/categorias');
-const { existeCategoriaPorId } = require('../helpers/db-validators');
+import { 
+    esAdminRole,
+    validarCampos,
+    validarJWT
+} from '../middlewares/index.js'
+import { 
+    actualizarCategoria,
+    borrarCategoria,
+    crearCategoria,
+    obtenerCategoria,
+    obtenerCategorias
+} from '../controllers/categorias.js';
+import { existeCategoria } from '../helpers/db-validators.js';
 
 const router = Router();
 
@@ -16,40 +21,42 @@ const router = Router();
  * {{url}}/api/categorias
  */
 
-//  Obtener todas las categorias - publico
-router.get('/', obtenerCategorias );
-
-// Obtener una categoria por id - publico
-router.get('/:id',[
-    check('id', 'No es un id de Mongo válido').isMongoId(),
-    check('id').custom( existeCategoriaPorId ),
-    validarCampos,
-], obtenerCategoria );
-
-// Crear categoria - privado - cualquier persona con un token válido
-router.post('/', [ 
-    validarJWT,
-    check('nombre','El nombre es obligatorio').not().isEmpty(),
+// Obtener todas las categorías - público
+router.get( '/', [
+    check( 'paginacion', 'Debe ser un número' ).optional().isNumeric(),
     validarCampos
-], crearCategoria );
+], obtenerCategorias );
+
+// Obtener una categoría por id - público
+router.get( '/:id', [
+    check( 'id', 'Debe ser un OID válido' ).isMongoId(),
+    check( 'id' ).custom( existeCategoria ),
+    validarCampos
+], obtenerCategoria);
+
+// Crear categroría - privado - cualquier persona con un token válido
+router.post( '/', [
+    validarJWT,
+    check( 'nombre', 'El nombre es obligatorio y debe ser una cadena de texto' ).not().isEmpty().isString(),
+    validarCampos
+], crearCategoria);
 
 // Actualizar - privado - cualquiera con token válido
-router.put('/:id',[
+router.put( '/:id', [
     validarJWT,
-    check('nombre','El nombre es obligatorio').not().isEmpty(),
-    check('id').custom( existeCategoriaPorId ),
+    check( 'id', 'Debe ser un OID válido' ).isMongoId(),
+    check( 'id' ).custom( existeCategoria ),
+    check( 'nombre', "Debe ser una cadena de texto" ).not().isEmpty().isString(),
     validarCampos
-],actualizarCategoria );
+], actualizarCategoria);
 
-// Borrar una categoria - Admin
-router.delete('/:id',[
+// Borrar una categoría - Admin
+router.delete( '/:id', [
     validarJWT,
     esAdminRole,
-    check('id', 'No es un id de Mongo válido').isMongoId(),
-    check('id').custom( existeCategoriaPorId ),
-    validarCampos,
-],borrarCategoria);
+    check( 'id', 'Debe ser un OID válido' ).isMongoId(),
+    check( 'id' ).custom( existeCategoria ),
+    validarCampos
+], borrarCategoria);
 
-
-
-module.exports = router;
+export default router;
